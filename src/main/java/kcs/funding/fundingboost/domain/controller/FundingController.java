@@ -3,6 +3,7 @@ package kcs.funding.fundingboost.domain.controller;
 import kcs.funding.fundingboost.domain.dto.common.CommonSuccessDto;
 import kcs.funding.fundingboost.domain.dto.global.ResponseDto;
 import kcs.funding.fundingboost.domain.dto.request.RegisterFundingDto;
+import kcs.funding.fundingboost.domain.dto.response.FriendFundingDto;
 import kcs.funding.fundingboost.domain.dto.response.FundingRegistrationItemDto;
 import kcs.funding.fundingboost.domain.service.FundingService;
 import lombok.RequiredArgsConstructor;
@@ -37,5 +38,12 @@ public class FundingController {
     public CommonSuccessDto closeFunding(@PathVariable("fundingId") Long fundingId) {
         return fundingService.terminateFunding(fundingId);
 
+    }
+
+    @GetMapping("/friends")
+    public ResponseDto<List<FriendFundingDto>> viewFriendFundingList(
+            @RequestParam(name = "memberId") Long memberId
+    ){
+        return ResponseDto.ok(fundingService.getFriendFundingList(memberId));
     }
 }

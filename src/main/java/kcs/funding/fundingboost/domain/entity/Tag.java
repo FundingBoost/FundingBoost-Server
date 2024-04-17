@@ -22,6 +22,6 @@ public enum Tag {
                 return tag;
             }
         }
-        throw new CommonException(ErrorCode.INTERNAL_SERVER_ERROR);
+        throw new CommonException(ErrorCode.NOT_FOUND_TAG);
     }
 }

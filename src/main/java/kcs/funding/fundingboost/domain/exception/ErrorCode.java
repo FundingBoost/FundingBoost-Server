@@ -16,8 +16,8 @@ public enum ErrorCode {
     NOT_FOUND_LOGIN_USER(40401, HttpStatus.NOT_FOUND, "로그인한 사용자가 존재하지 않습니다."),
     NOT_FOUND_AUTHORIZATION_HEADER(40401, HttpStatus.NOT_FOUND, "Authorization 헤더가 존재하지 않습니다."),
     NOT_FOUND_USER(40401, HttpStatus.NOT_FOUND, "해당 사용자가 존재하지 않습니다."),
-    NOT_FOUND_DIARY(40402, HttpStatus.NOT_FOUND, "해당 일기가 존재하지 않습니다."),
-    NOT_FOUND_SHARED_URL(40403, HttpStatus.NOT_FOUND, "해당 공유 URL이 존재하지 않습니다."),
+    NOT_FOUND_TAG(40402, HttpStatus.NOT_FOUND, "해당 태그가 존재하지 않습니다."),
+    NOT_FOUND_ITEM(40403, HttpStatus.NOT_FOUND, "해당 아이템이 존재하지 않습니다."),
     NOT_FOUND_ALBUM(40404, HttpStatus.NOT_FOUND, "해당 앨범이 존재하지 않습니다."),
 
     // Invalid Argument Error
@@ -30,6 +30,7 @@ public enum ErrorCode {
     BAD_REQUEST_JSON(40006, HttpStatus.BAD_REQUEST, "잘못된 JSON 형식입니다."),
     SEARCH_SHORT_LENGTH_ERROR(40007, HttpStatus.BAD_REQUEST, "검색어는 2글자 이상이어야 합니다."),
     ALREADY_SHARED_DIARY(40008, HttpStatus.BAD_REQUEST, "이미 공유 중인 일기입니다."),
+    INVALID_FUNDING_STATUS(40009, HttpStatus.BAD_REQUEST, "펀딩이 정상적이지 않습니다."),
 
     // Gone Error
     GONE_SHARED_URL(41001, HttpStatus.GONE, "해당 공유 URL이 만료되었습니다."),

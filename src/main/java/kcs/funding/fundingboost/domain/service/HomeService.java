@@ -4,12 +4,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import kcs.funding.fundingboost.domain.dto.response.HomeFriendFundingDto;
-import kcs.funding.fundingboost.domain.dto.response.HomeMemberInfoDto;
-import kcs.funding.fundingboost.domain.dto.response.HomeMyFundingItemDto;
-import kcs.funding.fundingboost.domain.dto.response.HomeMyFundingStatusDto;
-import kcs.funding.fundingboost.domain.dto.response.HomeViewDto;
-import kcs.funding.fundingboost.domain.dto.response.HomeItemDto;
+
+import kcs.funding.fundingboost.domain.dto.response.*;
 import kcs.funding.fundingboost.domain.entity.Funding;
 import kcs.funding.fundingboost.domain.entity.FundingItem;
 import kcs.funding.fundingboost.domain.entity.Relationship;
@@ -30,6 +26,7 @@ public class HomeService {
     private final FundingRepository fundingRepository;
     private final RelationshipRepositoryRepository relationshipRepository;
     private final ItemRepository itemRepository;
+    private final FundingService fundingService;
 
 
     public HomeViewDto getMainView(Long memberId) {
@@ -45,7 +42,7 @@ public class HomeService {
         List<HomeMyFundingItemDto> homeMyFundingItemList = getMyFundingItems(funding);
 
         // 친구 펀딩: 이름, 프로필 이미지, 펀딩Id, 현재 펀딩 진행중인 상품 이미지, 펀딩 진행률, 펀딩 마감일
-        List<HomeFriendFundingDto> homeFriendFundingList = getFriendFundingList(memberId, funding);
+        List<HomeFriendFundingDto> homeFriendFundingList = getFriendFundingList(memberId);
 
         // 상품 목록: 상품Id, 이름, 가격, 이미지, 브랜드명
         List<HomeItemDto> itemList = itemRepository.findAll().stream()
@@ -56,40 +53,31 @@ public class HomeService {
             homeFriendFundingList, itemList);
     }
 
-    private List<HomeFriendFundingDto> getFriendFundingList(Long memberId, Funding funding) {
-        List<Relationship> relationshipList = relationshipRepository.findFriendByMemberId(memberId);
+    private List<HomeFriendFundingDto> getFriendFundingList(Long memberId) {
+
+        List<CommonFriendFundingDto> commonFriendFundingDtoList = fundingService.getCommonFriendFundingList(memberId);
         List<HomeFriendFundingDto> friendFundingDtoList = new ArrayList<>();
 
-        for (Relationship relationship : relationshipList) {
-            Funding friendFunding = fundingRepository.findFundingInfo(
-                relationship.getFriend().getMemberId());
-            int collectPrice = friendFunding.getCollectPrice();
-            int percent = collectPrice / funding.getTotalPrice();
-            List<FundingItem> fundingItems = friendFunding.getFundingItems();
-            for (FundingItem fundingItem : fundingItems) {
-                int itemPrice = fundingItem.getItem().getItemPrice();
-                String nowFundingItemImageUrl = null;
+        for (CommonFriendFundingDto commonFriendFundingDto : commonFriendFundingDtoList) {
+            int collectPrice = commonFriendFundingDto.collectPrice();
+            String nowFundingItemImageUrl = null;
+            for (FriendFundingItemDto friendFundingItemDto : commonFriendFundingDto.friendFundingItemDtoList()) {
+                int itemPrice = friendFundingItemDto.itemPrice();
+
                 if (collectPrice >= itemPrice) {
                     collectPrice -= itemPrice;
                 } else {
-                    nowFundingItemImageUrl = fundingItem.getItem().getItemImageUrl();
+                    nowFundingItemImageUrl = friendFundingItemDto.itemImageUrl();
                 }
-
-                int leftDate = (int) ChronoUnit.DAYS.between(LocalDate.now(),
-                    friendFunding.getDeadline());
-                String deadline = "D-" + leftDate;
-
-                HomeFriendFundingDto homeFriendFundingDto = HomeFriendFundingDto.fromEntity(
-                    friendFunding,
-                    nowFundingItemImageUrl, percent,
-                    deadline);
-                friendFundingDtoList.add(homeFriendFundingDto);
             }
+            friendFundingDtoList.add(HomeFriendFundingDto.fromEntity(
+                    commonFriendFundingDto,
+                    nowFundingItemImageUrl));
         }
         return friendFundingDtoList;
     }
 
-    private static List<HomeMyFundingItemDto> getMyFundingItems(Funding funding) {
+    private List<HomeMyFundingItemDto> getMyFundingItems(Funding funding) {
         int collectPrice = funding.getCollectPrice();
         List<FundingItem> myFundingItems = funding.getFundingItems();
         List<HomeMyFundingItemDto> myFundingItemDtoList = new ArrayList<>();
@@ -100,7 +88,7 @@ public class HomeService {
                 collectPrice -= itemPrice;
                 percent = 100;
             } else {
-                percent = (int) collectPrice / itemPrice;
+                percent = (int) collectPrice * 100 / itemPrice;
             }
             HomeMyFundingItemDto homeMyFundingItemDto = HomeMyFundingItemDto.fromEntity(
                 myFundingItem, percent);

@@ -9,27 +9,13 @@ import java.util.List;
 
 @Builder
 public record FriendFundingDto(
-        String friendProfileImgUrl,
-        Long fundingId,
-        String deadline,
-        List<String> fundingItemImageUrlList,
-        String tag,
-        int fundingTotalPercent
+        CommonFriendFundingDto commonFriendFundingDto
 ) {
     public static FriendFundingDto fromEntity(
-            Funding funding,
-            Member member,
-            String deadline,
-            List<String> fundingItemImageUrlList,
-            int fundingTotalPercent
+            CommonFriendFundingDto commonFriendFundingDto
     ) {
         return FriendFundingDto.builder()
-                .friendProfileImgUrl(member.getProfileImgUrl())
-                .fundingId(funding.getFundingId())
-                .deadline(deadline)
-                .fundingItemImageUrlList(fundingItemImageUrlList)
-                .tag(funding.getTag().getTag())
-                .fundingTotalPercent(fundingTotalPercent)
+                .commonFriendFundingDto(commonFriendFundingDto)
                 .build();
     }
 }

@@ -113,7 +113,7 @@ public class InitH2DB {
             }
 
             // 내 펀딩 정보 추가
-            Funding myFunding = Funding.createFunding(member1, "생일축하해줘", Tag.BIRTHDAY, 100000,
+            Funding myFunding = Funding.createFunding(member1, "생일축하해줘", Tag.BIRTHDAY, 28520,
                 LocalDateTime.now().plusDays(14));
             em.persist(myFunding);
 
@@ -124,7 +124,7 @@ public class InitH2DB {
 
             // 친구 펀딩 정보 추가
             Funding friend1Funding = Funding.createFunding(member2, "드디어 졸업 성공~~", Tag.GRADUATE,
-                200000,
+                57000,
                 LocalDateTime.now().plusDays(7));
             em.persist(friend1Funding);
 
