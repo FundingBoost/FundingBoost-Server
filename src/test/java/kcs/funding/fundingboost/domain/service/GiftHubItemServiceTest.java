@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import kcs.funding.fundingboost.domain.dto.common.CommonSuccessDto;
@@ -28,50 +27,52 @@ import kcs.funding.fundingboost.domain.entity.GiftHubItem;
 import kcs.funding.fundingboost.domain.entity.Item;
 import kcs.funding.fundingboost.domain.entity.Member;
 import kcs.funding.fundingboost.domain.exception.CommonException;
+import kcs.funding.fundingboost.domain.model.GiftHubItemFixture;
+import kcs.funding.fundingboost.domain.model.ItemFixture;
+import kcs.funding.fundingboost.domain.model.MemberFixture;
 import kcs.funding.fundingboost.domain.repository.ItemRepository;
 import kcs.funding.fundingboost.domain.repository.MemberRepository;
 import kcs.funding.fundingboost.domain.repository.giftHubItem.GiftHubItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class GiftHubItemServiceTest {
 
     @Mock
     private GiftHubItemRepository giftHubItemRepository;
-
     @Mock
     private MemberRepository memberRepository;
-
     @Mock
     private ItemRepository itemRepository;
-
     @InjectMocks
     private GiftHubItemService giftHubItemService;
 
     private Member member;
     private Item item1;
     private Item item2;
-    private GiftHubItem giftHubItem1;
-    private GiftHubItem giftHubItem2;
+    private GiftHubItem giftHubItem;
 
     @BeforeEach
-    void setUp() {
-        member = createMember();
-        item1 = createItem1();
-        item2 = createItem2();
-        giftHubItem1 = GiftHubItem.createGiftHubItem(1, item1, member);
-        giftHubItem2 = GiftHubItem.createGiftHubItem(2, item2, member);
+    void beforeEach() throws NoSuchFieldException, IllegalAccessException {
+        member = MemberFixture.member1();
+        item1 = ItemFixture.item1();
+        item2 = ItemFixture.item2();
+        giftHubItem = GiftHubItemFixture.quantity1(item1, member);
     }
 
     @DisplayName("로그인 한 사용자의 기프트 허브 정보")
     @Test
     void getGiftHub_ReturnsGiftHubDtoList_WhenMemberExists() {
         //given
+        GiftHubItem giftHubItem1 = GiftHubItem.createGiftHubItem(1, item1, member);
+        GiftHubItem giftHubItem2 = GiftHubItem.createGiftHubItem(2, item2, member);
+
         when(memberRepository.findById(member.getMemberId())).thenReturn(Optional.of(member));
         when(giftHubItemRepository.findGiftHubItemsByMember(member.getMemberId())).thenReturn(
                 List.of(giftHubItem1, giftHubItem2));
@@ -103,15 +104,8 @@ class GiftHubItemServiceTest {
 
     @DisplayName("GiftHubItem 추가 성공")
     @Test
-    void addGiftHub() throws NoSuchFieldException, IllegalAccessException {
+    void addGiftHub() {
         //given
-        Field itemId1 = item1.getClass().getDeclaredField("itemId");
-        itemId1.setAccessible(true);
-        itemId1.set(item1, 1L);
-
-        Field itemId2 = item1.getClass().getDeclaredField("itemId");
-        itemId2.setAccessible(true);
-        itemId2.set(item2, 2L);
         AddGiftHubDto addGiftHubDto = new AddGiftHubDto(member.getMemberId(), 1);
 
         when(itemRepository.findById(item1.getItemId())).thenReturn(Optional.of(item1));
@@ -150,12 +144,8 @@ class GiftHubItemServiceTest {
 
     @DisplayName("GiftHubItem 추가 실패 - 멤버를 찾을 수 없음")
     @Test
-    void addGiftHub_Fail_MemberNotFound() throws NoSuchFieldException, IllegalAccessException {
+    void addGiftHub_Fail_MemberNotFound() {
         // given
-        //리플렉션을 이용한 itemId 강제 주입
-        Field itemId = item1.getClass().getDeclaredField("itemId");
-        itemId.setAccessible(true);
-        itemId.set(item1, 1L);
         when(itemRepository.findById(item1.getItemId())).thenReturn(Optional.of(item1));
         when(memberRepository.findById(member.getMemberId())).thenReturn(Optional.empty());
         AddGiftHubDto addGiftHubDto = new AddGiftHubDto(member.getMemberId(), 1);
@@ -174,16 +164,17 @@ class GiftHubItemServiceTest {
     @Test
     void updateItem_Success() {
         //given
+        Long gifthubItemId = 1L;
         ItemQuantityDto itemQuantityDto = new ItemQuantityDto(10);
         GiftHubItem mockGiftHubItem = mock(GiftHubItem.class);
 
-        when(giftHubItemRepository.findById(giftHubItem1.getGiftHunItemId())).thenReturn(Optional.of(mockGiftHubItem));
+        when(giftHubItemRepository.findById(gifthubItemId)).thenReturn(Optional.of(mockGiftHubItem));
 
         //when
-        CommonSuccessDto result = giftHubItemService.updateItem(giftHubItem1.getGiftHunItemId(), itemQuantityDto);
+        CommonSuccessDto result = giftHubItemService.updateItem(gifthubItemId, itemQuantityDto);
 
         //then
-        verify(giftHubItemRepository).findById(giftHubItem1.getGiftHunItemId());
+        verify(giftHubItemRepository).findById(gifthubItemId);
         verify(mockGiftHubItem).updateQuantity(itemQuantityDto.quantity());
         assertTrue(result.isSuccess());
     }
@@ -209,51 +200,31 @@ class GiftHubItemServiceTest {
     @Test
     void deleteGiftHubItem_Success() {
         //given
-        when(giftHubItemRepository.findGiftHubItemByGiftHubItemIdAndMemberId(giftHubItem1.getGiftHunItemId(),
-                member.getMemberId())).thenReturn(Optional.of(giftHubItem1));
+        when(giftHubItemRepository.findGiftHubItemByGiftHubItemIdAndMemberId(giftHubItem.getGiftHunItemId(),
+                member.getMemberId())).thenReturn(Optional.of(giftHubItem));
 
         //when
         CommonSuccessDto result = giftHubItemService.deleteGiftHubItem(member.getMemberId(),
-                giftHubItem1.getGiftHunItemId());
+                giftHubItem.getGiftHunItemId());
 
         //then
         assertTrue(result.isSuccess());
-        verify(giftHubItemRepository).deleteById(giftHubItem1.getGiftHunItemId());
+        verify(giftHubItemRepository).deleteById(giftHubItem.getGiftHunItemId());
     }
 
     @DisplayName("GiftHubItem 삭제 실패 - 아이템 조회 실패")
     @Test
     void deleteGiftHubItem_ItemNotFound() {
         //given
-        when(giftHubItemRepository.findGiftHubItemByGiftHubItemIdAndMemberId(giftHubItem1.getGiftHunItemId(),
+        when(giftHubItemRepository.findGiftHubItemByGiftHubItemIdAndMemberId(giftHubItem.getGiftHunItemId(),
                 member.getMemberId())).thenReturn(Optional.empty());
 
         //when
         CommonException exception = assertThrows(CommonException.class,
-                () -> giftHubItemService.deleteGiftHubItem(member.getMemberId(), giftHubItem1.getGiftHunItemId()));
+                () -> giftHubItemService.deleteGiftHubItem(member.getMemberId(), giftHubItem.getGiftHunItemId()));
 
         //then
         assertEquals(NOT_FOUND_GIFTHUB_ITEM.getMessage(), exception.getMessage());
         verify(giftHubItemRepository, never()).deleteById(anyLong());
-    }
-
-
-    private static Member createMember() {
-        return Member.createMemberWithPoint("임창희", "dlackdgml3710@gmail.com", "",
-                "https://p.kakaocdn.net/th/talkp/wnbbRhlyRW/XaGAXxS1OkUtXnomt6S4IK/ky0f9a_110x110_c.jpg",
-                46000,
-                "", "aFxoWGFUZlV5SH9MfE9-TH1PY1JiV2JRaF83");
-    }
-
-    private static Item createItem1() {
-        return Item.createItem("NEW 루쥬 알뤼르 벨벳 뉘 블랑쉬 리미티드 에디션", 61000,
-                "https://img1.kakaocdn.net/thumb/C320x320@2x.fwebp.q82/?fname=https%3A%2F%2Fst.kakaocdn.net%2Fproduct%2Fgift%2Fproduct%2F20240319133310_1fda0cf74e4f43608184bce3050ae22a.jpg",
-                "샤넬", "뷰티", "00:00");
-    }
-
-    private static Item createItem2() {
-        return Item.createItem("NEW 루쥬 코코 밤(+샤넬 기프트 카드)", 51000,
-                "https://img1.kakaocdn.net/thumb/C320x320@2x.fwebp.q82/?fname=https%3A%2F%2Fst.kakaocdn.net%2Fproduct%2Fgift%2Fproduct%2F20220111185052_b92447cb764d470ead70b2d0fe75fe5c.jpg",
-                "샤넬", "뷰티", "934 코랄린 [NEW]");
     }
 }

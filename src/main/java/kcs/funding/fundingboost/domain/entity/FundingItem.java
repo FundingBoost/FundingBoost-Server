@@ -57,6 +57,7 @@ public class FundingItem extends BaseTimeEntity {
         fundingItem.itemSequence = itemSequence;
         fundingItem.itemStatus = false;
         fundingItem.finishedStatus = true;
+        funding.getFundingItems().add(fundingItem);
         return fundingItem;
     }
 

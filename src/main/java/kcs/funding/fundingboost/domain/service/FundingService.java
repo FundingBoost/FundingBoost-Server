@@ -1,7 +1,5 @@
 package kcs.funding.fundingboost.domain.service;
 
-import static kcs.funding.fundingboost.domain.exception.ErrorCode.ALREADY_EXIST_FUNDING;
-import static kcs.funding.fundingboost.domain.exception.ErrorCode.INVALID_FUNDING_OR_PRICE;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.INVALID_FUNDING_STATUS;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.NOT_FOUND_FUNDING;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.NOT_FOUND_ITEM;
@@ -13,7 +11,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 import kcs.funding.fundingboost.domain.dto.common.CommonSuccessDto;
 import kcs.funding.fundingboost.domain.dto.request.fundingRegist.RegisterFundingDto;
 import kcs.funding.fundingboost.domain.dto.response.common.CommonFriendFundingDto;
@@ -22,7 +19,6 @@ import kcs.funding.fundingboost.domain.dto.response.friendFunding.FriendFundingD
 import kcs.funding.fundingboost.domain.dto.response.friendFundingDetail.ContributorDto;
 import kcs.funding.fundingboost.domain.dto.response.friendFundingDetail.FriendFundingDetailDto;
 import kcs.funding.fundingboost.domain.dto.response.friendFundingDetail.FriendFundingItemDto;
-import kcs.funding.fundingboost.domain.dto.response.fundingRegist.FundingRegistrationItemDto;
 import kcs.funding.fundingboost.domain.dto.response.home.HomeFriendFundingDto;
 import kcs.funding.fundingboost.domain.dto.response.home.HomeItemDto;
 import kcs.funding.fundingboost.domain.dto.response.home.HomeMemberInfoDto;
@@ -71,20 +67,20 @@ public class FundingService {
     private final ContributorRepository contributorRepository;
     private final RelationshipRepository relationshipRepository;
 
-    public List<FundingRegistrationItemDto> getFundingRegister(List<Long> registerFundingBringItemDto, Long memberId) {
-
-        Optional<Funding> funding = fundingRepository.findByMemberIdAndStatus(memberId, true);
-
-        if (funding.isPresent()) {
-            throw new CommonException(ALREADY_EXIST_FUNDING);
-        }
-
-        return IntStream.range(0, registerFundingBringItemDto.size())
-                .mapToObj(i -> FundingRegistrationItemDto.createFundingRegistrationItemDto(
-                        itemRepository.findById(registerFundingBringItemDto.get(i))
-                                .orElseThrow(() -> new CommonException(NOT_FOUND_ITEM)),
-                        (long) i + 1)).toList();
-    }
+//    public List<FundingRegistrationItemDto> getFundingRegister(List<Long> registerFundingBringItemDto, Long memberId) {
+//
+//        Optional<Funding> funding = fundingRepository.findByMemberIdAndStatus(memberId, true);
+//
+//        if (funding.isPresent()) {
+//            throw new CommonException(ALREADY_EXIST_FUNDING);
+//        }
+//
+//        return IntStream.range(0, registerFundingBringItemDto.size())
+//                .mapToObj(i -> FundingRegistrationItemDto.createFundingRegistrationItemDto(
+//                        itemRepository.findById(registerFundingBringItemDto.get(i))
+//                                .orElseThrow(() -> new CommonException(NOT_FOUND_ITEM)),
+//                        (long) i + 1)).toList();
+//    }
 
     @Transactional
     public CommonSuccessDto putFundingAndFundingItem(Long memberId, RegisterFundingDto registerFundingDto) {
@@ -132,24 +128,25 @@ public class FundingService {
     public FriendFundingDetailDto viewFriendsFundingDetail(Long fundingId, Long memberId) {
 
         List<FundingItem> fundingItems = fundingItemRepository.findAllByFundingId(fundingId);
-        List<FriendFundingItemDto> friendFundingItemList = fundingItems.stream().map(FriendFundingItemDto::fromEntity)
-                .toList();
 
-        Funding funding = fundingItems.get(0).getFunding();
+        if (!fundingItems.isEmpty()) {
+            List<FriendFundingItemDto> friendFundingItemList = fundingItems.stream()
+                    .map(FriendFundingItemDto::fromEntity)
+                    .toList();
+            Funding funding = fundingItems.get(0).getFunding();
 
-        List<ContributorDto> contributorList = contributorRepository.findByFundingId(fundingId)
-                .stream()
-                .map(ContributorDto::fromEntity)
-                .toList();
+            List<ContributorDto> contributorList = contributorRepository.findByFundingId(fundingId)
+                    .stream()
+                    .map(ContributorDto::fromEntity)
+                    .toList();
 
-        int contributedPercent = 0;
-        if (funding.getTotalPrice() > 0) {
-            contributedPercent = funding.getCollectPrice() / funding.getTotalPrice() * 100;
+            int contributedPercent = funding.getCollectPrice() * 100 / funding.getTotalPrice();
+
+            return FriendFundingDetailDto.fromEntity(friendFundingItemList, funding, contributorList,
+                    contributedPercent);
         } else {
-            throw new CommonException(INVALID_FUNDING_OR_PRICE);
+            throw new CommonException(NOT_FOUND_FUNDING);
         }
-
-        return FriendFundingDetailDto.fromEntity(friendFundingItemList, funding, contributorList, contributedPercent);
     }
 
     private List<CommonFriendFundingDto> getCommonFriendFundingList(Long memberId) {
@@ -163,7 +160,7 @@ public class FundingService {
             if (friendFunding.isEmpty()) {
                 continue;
             }
-            
+
             System.out.println(friendFunding.get().getFundingId());
 
             int leftDate = (int) ChronoUnit.DAYS.between(LocalDate.now(),
@@ -350,7 +347,7 @@ public class FundingService {
 
         List<MyPageFundingDetailHistoryDto> myPageFundingDetailHistoryDtos = fundings.stream()
                 .map(funding -> {
-                    Long contributors = contributorRepository.countContributorsForFunding(funding.getFundingId());
+                    int contributors = contributorRepository.countContributorsForFunding(funding.getFundingId());
                     return MyPageFundingDetailHistoryDto.fromEntity(funding, contributors);
                 })
                 .toList();

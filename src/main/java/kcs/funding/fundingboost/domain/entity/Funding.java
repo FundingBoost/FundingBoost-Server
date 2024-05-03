@@ -91,7 +91,8 @@ public class Funding extends BaseTimeEntity {
     }
 
     public static Funding createFundingForTest(Member member, String message, Tag tag,
-                                               int totalPrice, int collectPrice, LocalDateTime deadline) {
+                                               int totalPrice, int collectPrice, LocalDateTime deadline,
+                                               boolean fundingStatus) {
         Funding funding = new Funding();
         funding.member = member;
         funding.message = message;

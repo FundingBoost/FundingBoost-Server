@@ -3,7 +3,6 @@ package kcs.funding.fundingboost.domain.service.pay;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.INVALID_FUNDING_MONEY;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.NOT_FOUND_FUNDING;
 import static kcs.funding.fundingboost.domain.exception.ErrorCode.NOT_FOUND_MEMBER;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,49 +12,48 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import kcs.funding.fundingboost.domain.dto.common.CommonSuccessDto;
 import kcs.funding.fundingboost.domain.dto.request.pay.friendFundingPay.FriendPayProcessDto;
 import kcs.funding.fundingboost.domain.dto.response.pay.friendFundingPay.FriendFundingPayingDto;
 import kcs.funding.fundingboost.domain.entity.Funding;
 import kcs.funding.fundingboost.domain.entity.Member;
-import kcs.funding.fundingboost.domain.entity.Tag;
 import kcs.funding.fundingboost.domain.exception.CommonException;
+import kcs.funding.fundingboost.domain.model.FundingFixture;
+import kcs.funding.fundingboost.domain.model.MemberFixture;
 import kcs.funding.fundingboost.domain.repository.MemberRepository;
 import kcs.funding.fundingboost.domain.repository.funding.FundingRepository;
 import kcs.funding.fundingboost.domain.service.utils.PayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class FriendPayServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
-
     @Mock
     private FundingRepository fundingRepository;
-
     @InjectMocks
     private FriendPayService friendPayService;
-
-    private Member member;
-
-    private Funding funding;
+    private Member me;
+    private Member friend;
+    private Funding friendFunding;
 
     @BeforeEach
-    void setup() {
-        member = createMember();
-        funding = createFunding(member);
+    void setup() throws NoSuchFieldException, IllegalAccessException {
+        me = MemberFixture.member1();
+        friend = MemberFixture.member2();
+        friendFunding = FundingFixture.Graduate(friend);
     }
 
 
@@ -63,15 +61,18 @@ class FriendPayServiceTest {
     @Test
     public void getFriendFundingPay_Success() {
         //given
-        when(memberRepository.findById(anyLong())).thenReturn(Optional.of(member));
-        when(fundingRepository.findById(anyLong())).thenReturn(Optional.of(funding));
+        when(memberRepository.findById(anyLong())).thenReturn(Optional.of(me));
+        when(fundingRepository.findById(anyLong())).thenReturn(Optional.of(friendFunding));
+
+        FriendFundingPayingDto expectFriendFundingPayingDto = FriendFundingPayingDto.fromEntity(friendFunding,
+                me.getPoint());
 
         //when
-        FriendFundingPayingDto resultDto = friendPayService.getFriendFundingPay(1L, 1L);
+        FriendFundingPayingDto resultDto = friendPayService.getFriendFundingPay(friendFunding.getFundingId(),
+                me.getMemberId());
 
         //then
-        assertThat(funding.getTotalPrice()).isEqualTo(resultDto.totalPrice());
-        assertThat(member.getPoint()).isEqualTo(resultDto.myPoint());
+        assertEquals(expectFriendFundingPayingDto, resultDto);
     }
 
     @DisplayName("친구 펀딩 결제 조회 실패 : Member Not Found")
@@ -80,11 +81,10 @@ class FriendPayServiceTest {
         //given
         when(memberRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-        //when
+        //when & then
         CommonException exception = assertThrows(CommonException.class,
-                () -> friendPayService.getFriendFundingPay(1L, 1L));
+                () -> friendPayService.getFriendFundingPay(friendFunding.getFundingId(), me.getMemberId()));
 
-        //then
         assertEquals(NOT_FOUND_MEMBER.getMessage(), exception.getMessage());
     }
 
@@ -95,8 +95,8 @@ class FriendPayServiceTest {
         //given
         FriendPayProcessDto friendPayProcessDto = new FriendPayProcessDto(myPoint);
 
-        when(memberRepository.findById(member.getMemberId())).thenReturn(Optional.of(member));
-        when(fundingRepository.findById(funding.getFundingId())).thenReturn(Optional.of(funding));
+        when(memberRepository.findById(me.getMemberId())).thenReturn(Optional.of(me));
+        when(fundingRepository.findById(friendFunding.getFundingId())).thenReturn(Optional.of(friendFunding));
 
         //when & then
         // Mockito-inline : 정적 메서드인 deductPointsIfPossible 메서드를 목킹하는 방법
@@ -104,12 +104,12 @@ class FriendPayServiceTest {
             mocked.when(() -> PayUtils.deductPointsIfPossible(any(Member.class), anyInt()))
                     .thenAnswer(invocation -> null);
 
-            CommonSuccessDto result = friendPayService.fund(member.getMemberId(), funding.getFundingId(),
+            CommonSuccessDto result = friendPayService.fund(me.getMemberId(), friendFunding.getFundingId(),
                     friendPayProcessDto);
 
             assertTrue(result.isSuccess());
-            verify(memberRepository).findById(member.getMemberId());
-            verify(fundingRepository).findById(funding.getFundingId());
+            verify(memberRepository).findById(me.getMemberId());
+            verify(fundingRepository).findById(friendFunding.getFundingId());
         }
     }
 
@@ -120,11 +120,11 @@ class FriendPayServiceTest {
         //given
         FriendPayProcessDto dto = new FriendPayProcessDto(myPoint);
 
-        when(memberRepository.findById(member.getMemberId())).thenThrow(new CommonException(NOT_FOUND_MEMBER));
+        when(memberRepository.findById(me.getMemberId())).thenThrow(new CommonException(NOT_FOUND_MEMBER));
 
         //when
         CommonException exception = assertThrows(CommonException.class,
-                () -> friendPayService.fund(member.getMemberId(), funding.getFundingId(), dto));
+                () -> friendPayService.fund(me.getMemberId(), friendFunding.getFundingId(), dto));
 
         //then
         assertEquals(NOT_FOUND_MEMBER.getMessage(), exception.getMessage());
@@ -138,44 +138,34 @@ class FriendPayServiceTest {
         //given
         FriendPayProcessDto dto = new FriendPayProcessDto(myPoint);
 
-        when(memberRepository.findById(member.getMemberId())).thenReturn(Optional.of(member));
-        when(fundingRepository.findById(funding.getFundingId())).thenThrow(new CommonException(NOT_FOUND_FUNDING));
+        when(memberRepository.findById(me.getMemberId())).thenReturn(Optional.of(me));
+        when(fundingRepository.findById(friendFunding.getFundingId())).thenThrow(
+                new CommonException(NOT_FOUND_FUNDING));
 
         //when
         CommonException exception = assertThrows(CommonException.class,
-                () -> friendPayService.fund(member.getMemberId(), funding.getFundingId(), dto));
+                () -> friendPayService.fund(me.getMemberId(), friendFunding.getFundingId(), dto));
 
         //then
         assertEquals(NOT_FOUND_FUNDING.getMessage(), exception.getMessage());
     }
 
-    @DisplayName("친구 펀딩 결제 실패 : Invalid Funding Money")
+    @DisplayName("친구 펀딩 결제 실패 : 펀딩 금액 이상 후원할 수 없음")
     @ParameterizedTest(name = "{index} {displayName} arguments = {arguments}")
     @ValueSource(ints = {10001, 20000, 30000})
-    void fund_InvalidFundingMoney_ThrowsException(int myPoint) {
+    void fund_InvalidFundingMoney_ThrowsException(int myPoint) throws NoSuchFieldException, IllegalAccessException {
         //given
+        Funding friendFunding = FundingFixture.lowPriceRestFunding(friend);
         FriendPayProcessDto dto = new FriendPayProcessDto(myPoint);
 
-        when(memberRepository.findById(member.getMemberId())).thenReturn(Optional.of(member));
-        when(fundingRepository.findById(funding.getFundingId())).thenReturn(Optional.of(funding));
+        when(memberRepository.findById(me.getMemberId())).thenReturn(Optional.of(me));
+        when(fundingRepository.findById(friendFunding.getFundingId())).thenReturn(Optional.of(friendFunding));
 
         //when
         CommonException exception = assertThrows(CommonException.class,
-                () -> friendPayService.fund(member.getMemberId(), funding.getFundingId(), dto));
+                () -> friendPayService.fund(me.getMemberId(), friendFunding.getFundingId(), dto));
 
         //then
         assertEquals(INVALID_FUNDING_MONEY.getMessage(), exception.getMessage());
-    }
-
-    private static Member createMember() {
-        return Member.createMemberWithPoint("임창희", "dlackdgml3710@gmail.com", "",
-                "https://p.kakaocdn.net/th/talkp/wnbbRhlyRW/XaGAXxS1OkUtXnomt6S4IK/ky0f9a_110x110_c.jpg",
-                46000,
-                "", "aFxoWGFUZlV5SH9MfE9-TH1PY1JiV2JRaF83");
-    }
-
-    private static Funding createFunding(Member member) {
-        return Funding.createFundingForTest(member, "생일축하해줘", Tag.BIRTHDAY, 100000, 90000,
-                LocalDateTime.now().plusDays(14));
     }
 }
