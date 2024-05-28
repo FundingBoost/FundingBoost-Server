@@ -36,5 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-### API ###
-applicaiton-api.properties
+### oauth config ###
+src/main/resources/application-oauth.yml
+src/test/resources/application-oauth.yml

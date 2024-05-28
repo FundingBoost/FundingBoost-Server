@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kcs.funding.fundingboost.domain.entity.common.BaseTimeEntity;
+import kcs.funding.fundingboost.domain.entity.member.Member;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +28,7 @@ public class GiftHubItem extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "giftHub_item_id")
-    private Long giftHunItemId;
+    private Long giftHubItemId;
 
     @ColumnDefault("1")
     @Column(name = "quantity")
@@ -51,5 +52,9 @@ public class GiftHubItem extends BaseTimeEntity {
 
     public static GiftHubItem createGiftHubItem(int quantity, Item item, Member member) {
         return new GiftHubItem(quantity, item, member);
+    }
+
+    public void updateQuantity(int quantity) {
+        this.quantity = quantity;
     }
 }

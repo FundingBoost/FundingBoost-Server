@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kcs.funding.fundingboost.domain.entity.common.BaseTimeEntity;
+import kcs.funding.fundingboost.domain.entity.member.Member;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,4 +37,11 @@ public class Bookmark extends BaseTimeEntity {
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "item_id")
     private Item item;
+
+    public static Bookmark createBookmark(Member member, Item item) {
+        Bookmark bookmark = new Bookmark();
+        bookmark.member = member;
+        bookmark.item = item;
+        return bookmark;
+    }
 }

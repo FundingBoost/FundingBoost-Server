@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import kcs.funding.fundingboost.domain.entity.common.BaseTimeEntity;
+import kcs.funding.fundingboost.domain.entity.member.Member;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,4 +42,13 @@ public class Contributor extends BaseTimeEntity {
     @NotNull
     @Column(name = "contributor_price")
     private int contributorPrice;
+
+    public static Contributor createContributor(int contributorPrice, Member member, Funding funding) {
+        Contributor contributor = new Contributor();
+        contributor.contributorPrice = contributorPrice;
+        contributor.member = member;
+        contributor.funding = funding;
+        funding.fund(contributorPrice);
+        return contributor;
+    }
 }

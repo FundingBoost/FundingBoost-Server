@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kcs.funding.fundingboost.domain.entity.common.BaseTimeEntity;
+import kcs.funding.fundingboost.domain.entity.member.Member;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -37,8 +38,12 @@ public class Delivery extends BaseTimeEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Member member;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Item item;
+    public static Delivery createDelivery(String address, String phoneNumber, String customerName, Member member) {
+        Delivery delivery = new Delivery();
+        delivery.address = address;
+        delivery.phoneNumber = phoneNumber;
+        delivery.customerName = customerName;
+        delivery.member = member;
+        return delivery;
+    }
 }

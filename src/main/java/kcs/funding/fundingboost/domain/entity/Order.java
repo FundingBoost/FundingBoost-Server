@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import kcs.funding.fundingboost.domain.entity.common.BaseTimeEntity;
+import kcs.funding.fundingboost.domain.entity.member.Member;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,18 +31,29 @@ public class Order extends BaseTimeEntity {
     private Long orderId;
 
     @NotNull
-    private int quantity;
+    private int totalPrice;
 
-    @NotNull
-    private int price;
-
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "item_id")
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Item item;
 
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "memeber_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Member member;
+
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "delivery_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Delivery delivery;
+
+
+    public static Order createOrder(Member member, Delivery delivery) {
+        Order order = new Order();
+        order.totalPrice = 0;
+        order.member = member;
+        order.delivery = delivery;
+        return order;
+    }
+
+    public void plusTotalPrice(int plusPrice) {
+        totalPrice += plusPrice;
+    }
 }
