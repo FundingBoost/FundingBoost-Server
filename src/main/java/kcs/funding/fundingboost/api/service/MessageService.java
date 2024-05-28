@@ -1,6 +1,7 @@
 package kcs.funding.fundingboost.api.service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import kcs.funding.fundingboost.api.dto.DefaultMessageDto;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -24,12 +25,13 @@ public class MessageService extends HttpCallService {
 
     private static final String SUCCESS_CODE = "0"; //kakao api에서 return해주는 success code 값
 
-    public boolean sendMessageToMe(String accessToken, DefaultMessageDto msgDto) {
+    public CompletableFuture<Boolean> sendMessageToMe(String accessToken, DefaultMessageDto msgDto) {
         MultiValueMap<String, String> parameters = createMessageParameters(msgDto, null);
         return sendMessage(MSG_SEND_TO_ME_URL, accessToken, parameters);
     }
 
-    public boolean sendMessageToFriends(String accessToken, DefaultMessageDto msgDto, List<String> uuids) {
+    public CompletableFuture<Boolean> sendMessageToFriends(String accessToken, DefaultMessageDto msgDto,
+                                                           List<String> uuids) {
         JSONArray receiverUuids = new JSONArray(uuids);
         MultiValueMap<String, String> parameters = createMessageParameters(msgDto, receiverUuids.toString());
         return sendMessage(MSG_SEND_TO_FRIENDS_URL, accessToken, parameters);
@@ -45,12 +47,21 @@ public class MessageService extends HttpCallService {
         return parameters;
     }
 
-    private boolean sendMessage(String url, String accessToken, MultiValueMap<String, String> parameters) {
-        HttpHeaders headers = createHeaders(accessToken);
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(parameters, headers);
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
-        return processResponse(response.getBody());
+    private CompletableFuture<Boolean> sendMessage(String url, String accessToken,
+                                                   MultiValueMap<String, String> parameters) {
+        return CompletableFuture.supplyAsync(() -> {
+            HttpHeaders headers = createHeaders(accessToken);
+            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(parameters, headers);
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.postForEntity(url, requestEntity, String.class);
+                return processResponse(response.getBody());
+            } catch (Exception e) {
+                // 로그 기록, 에러 처리
+                return false;
+            }
+        });
     }
 
     private HttpHeaders createHeaders(String accessToken) {
