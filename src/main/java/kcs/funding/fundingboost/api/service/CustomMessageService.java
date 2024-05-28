@@ -25,11 +25,19 @@ public class CustomMessageService {
     //예외(Exception.class)가 발생할 경우 최대 3회까지 자동으로 재시도
 //    @Scheduled(cron = "0 0 0 * * ?") // 매일 00:00 작업 실행
     @Scheduled(cron = "*/5 * * * * *") // 5초마다 작업 실행
-    public CompletableFuture<Boolean> sendReminderMessage() {
+    public void sendReminderMessage() {
         DefaultMessageDto myMsg = DefaultMessageDto.createDefaultMessageDto("text", "바로 확인하기",
                 "https://www.naver.com", "펀딩 남은 기간이 2일 남았습니다!!");
         String accessToken = HttpCallService.accessToken;
-        return messageService.sendMessageToMe(accessToken, myMsg);
+        CompletableFuture<Boolean> result = messageService.sendMessageToMe(accessToken, myMsg);
+
+        result.thenAccept(success -> {
+            if (success) {
+                log.info("메시지 전송 성공");
+            } else {
+                log.warn("메시지 전송 실패");
+            }
+        });
     }
 
     @Async
@@ -38,14 +46,23 @@ public class CustomMessageService {
     //예외(Exception.class)가 발생할 경우 최대 3회까지 자동으로 재시도
 //    @Scheduled(cron = "0 0 0 * * ?") // 매일 00:00 작업 실행
     @Scheduled(cron = "*/5 * * * * *") // 5초마다 작업 실행
-    public CompletableFuture<Boolean> sendMessageToFriends() {
+    public void sendMessageToFriends() {
         DefaultMessageDto myMsg = DefaultMessageDto.createDefaultMessageDto("text", "버튼 버튼",
                 "https://www.naver.com", "내가 지금 생각하고 있는 것은??");
         String accessToken = HttpCallService.accessToken;
         log.info("----------------------친구한테 메시지 보내기 성공!!!----------------------");
         List<String> friendUuids = Arrays.asList(
                 "aFtpXm1ZaVtuQnRMeUp9Tn5PY1JiV2JRaF8z"); // TODO: 실제로는 적절한 UUID 목록을 제공해야 합니다.
-        return messageService.sendMessageToFriends(accessToken, myMsg, friendUuids);
+        CompletableFuture<Boolean> result = messageService.sendMessageToFriends(accessToken, myMsg,
+                friendUuids);
+
+        result.thenAccept(success -> {
+            if (success) {
+                log.info("메시지 전송 성공");
+            } else {
+                log.warn("메시지 전송 실패");
+            }
+        });
     }
 
     @Recover

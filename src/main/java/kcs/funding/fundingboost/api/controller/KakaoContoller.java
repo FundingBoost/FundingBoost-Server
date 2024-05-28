@@ -1,11 +1,8 @@
 package kcs.funding.fundingboost.api.controller;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import kcs.funding.fundingboost.api.service.CustomMessageService;
 import kcs.funding.fundingboost.api.service.KakaoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,25 +44,14 @@ public class KakaoContoller {
     }
 
     @GetMapping("/send/me")
-    public CompletableFuture<Boolean> sendMyMessage() {
-        return customMessageService.sendReminderMessage();
+    public ResponseEntity<String> sendMyMessage() {
+        customMessageService.sendReminderMessage();
+        return ResponseEntity.accepted().body("나에게 메시지 전송을 요청했습니다. 처리 중입니다.");
     }
 
     @GetMapping("/send/friends")
     public ResponseEntity<String> sendMessageToFriends() {
-        CompletableFuture<Boolean> resultFuture = customMessageService.sendMessageToFriends();
-        boolean result;
-        try {
-            result = resultFuture.get();
-        } catch (InterruptedException | ExecutionException exception) {
-            Thread.currentThread().interrupt();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("메시지 전송 실패");
-        }
-
-        if (result) {
-            return ResponseEntity.ok().body("친구들에게 메세지 전송 성공");
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("메시지 전송 실패");
-        }
+        customMessageService.sendMessageToFriends();
+        return ResponseEntity.accepted().body("친구들에게 메시지 전송을 요청했습니다. 처리 중입니다.");
     }
 }
