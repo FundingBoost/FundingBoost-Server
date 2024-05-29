@@ -44,12 +44,14 @@ public class GiftHubItem extends BaseTimeEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Member member;
 
+    private GiftHubItem(int quantity, Item item, Member member) {
+        this.quantity = quantity;
+        this.item = item;
+        this.member = member;
+    }
+
     public static GiftHubItem createGiftHubItem(int quantity, Item item, Member member) {
-        GiftHubItem giftHubItem = new GiftHubItem();
-        giftHubItem.quantity = quantity;
-        giftHubItem.item = item;
-        giftHubItem.member = member;
-        return giftHubItem;
+        return new GiftHubItem(quantity, item, member);
     }
 
     public void updateQuantity(int quantity) {
