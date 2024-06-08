@@ -67,6 +67,9 @@ dependencies {
     //actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    //Apache HttpClient 버전 문제 해결
+    implementation group: 'org.apache.httpcomponents.client5', name: 'httpclient5', version: '5.2'
 }
 
 def generated = 'src/main/generated'

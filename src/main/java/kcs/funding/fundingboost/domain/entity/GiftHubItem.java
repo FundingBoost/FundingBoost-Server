@@ -22,12 +22,12 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "giftHub_item")
+@Table(name = "gift_hub_item")
 public class GiftHubItem extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
-    @Column(name = "giftHub_item_id")
+    @Column(name = "gift_hub_item_id")
     private Long giftHubItemId;
 
     @ColumnDefault("1")
