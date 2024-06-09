@@ -9,6 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -57,13 +58,9 @@ public class KaKaoLoginService {
      */
     public String getAccessTokenFromKakao(String clientId, String code) throws IOException {
         // 프록시 설정
-        org.apache.hc.core5.http.HttpHost proxy = new org.apache.hc.core5.http.HttpHost(
-                "http", "krmp-proxy.9rum.cc", 3128);
-        org.apache.hc.client5.http.impl.classic.HttpClientBuilder clientBuilder = org.apache.hc.client5.http.impl.classic.HttpClientBuilder.create();
-        clientBuilder.setProxy(proxy);
-        org.apache.hc.client5.http.classic.HttpClient httpClient = clientBuilder.build();
-        ClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
-
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("krmp-proxy.9rum.cc", 3128));
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setProxy(proxy);
         // KAKAO 서버에 인증 토큰 발급 요청
         RestClient restClient = RestClient.builder()
                 .requestFactory(requestFactory)
@@ -101,13 +98,9 @@ public class KaKaoLoginService {
      */
     public JwtDto getJwtDto(String accessToken) throws IOException {
         // 프록시 설정
-        org.apache.hc.core5.http.HttpHost proxy = new org.apache.hc.core5.http.HttpHost(
-                "http", "krmp-proxy.9rum.cc", 3128);
-        org.apache.hc.client5.http.impl.classic.HttpClientBuilder clientBuilder = org.apache.hc.client5.http.impl.classic.HttpClientBuilder.create();
-        clientBuilder.setProxy(proxy);
-        org.apache.hc.client5.http.classic.HttpClient httpClient = clientBuilder.build();
-        ClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
-
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("krmp-proxy.9rum.cc", 3128));
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setProxy(proxy);
         // kakao 서버에 access token으로 사용자 정보 요청
         RestClient restClient = RestClient.builder()
                 .requestFactory(requestFactory)
@@ -238,12 +231,9 @@ public class KaKaoLoginService {
      */
     private static String getFriendsListByKakao(String accessToken) {
         // 프록시 설정
-        org.apache.hc.core5.http.HttpHost proxy = new org.apache.hc.core5.http.HttpHost(
-                "http", "krmp-proxy.9rum.cc", 3128);
-        org.apache.hc.client5.http.impl.classic.HttpClientBuilder clientBuilder = org.apache.hc.client5.http.impl.classic.HttpClientBuilder.create();
-        clientBuilder.setProxy(proxy);
-        org.apache.hc.client5.http.classic.HttpClient httpClient = clientBuilder.build();
-        ClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("krmp-proxy.9rum.cc", 3128));
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setProxy(proxy);
 
         RestClient restClient = RestClient.builder()
                 .requestFactory(requestFactory)
