@@ -23,6 +23,8 @@ public class ElasticsearchConfig {
 
     @Bean
     public RestClient restClient() {
+        org.apache.hc.core5.http.HttpHost httpHost = new org.apache.hc.core5.http.HttpHost(host, port);
+
         return RestClient
                 .builder(new HttpHost(host, port, "http"))
                 .build();
