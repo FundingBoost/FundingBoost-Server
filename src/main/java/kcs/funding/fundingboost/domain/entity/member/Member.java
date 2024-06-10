@@ -96,4 +96,8 @@ public class Member extends BaseTimeEntity {
     public void plusPoint(int exchangePoint) {
         point += exchangePoint;
     }
+
+    public void changeProfileImgUrl(String newProfileImgUrl) {
+        this.profileImgUrl = newProfileImgUrl;
+    }
 }

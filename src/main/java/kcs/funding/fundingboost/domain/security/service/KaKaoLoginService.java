@@ -23,9 +23,12 @@ import kcs.funding.fundingboost.domain.security.KakaoOAuth2User;
 import kcs.funding.fundingboost.domain.security.entity.KakaoOAuthToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpHost;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -55,14 +58,19 @@ public class KaKaoLoginService {
      * 카카오 서버에서 인증 토큰을 받아오는 메소드
      */
     public String getAccessTokenFromKakao(String clientId, String code) throws IOException {
+        // 프록시 설정
+        HttpHost proxy = new HttpHost("krmp-proxy.9rum.cc", "http", 3128);
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        HttpClient httpClient = HttpClients.custom().setProxy(proxy).build();
+        requestFactory.setHttpClient(httpClient);
         // KAKAO 서버에 인증 토큰 발급 요청
         RestClient restClient = RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory())
+                .requestFactory(requestFactory)
                 .messageConverters(convert -> convert.add(new AllEncompassingFormHttpMessageConverter()))
                 .baseUrl("https://kauth.kakao.com/oauth/token")
                 .build();
 
-        //토큰 요청에 들어갈 body
+        // 토큰 요청에 들어갈 body
         MultiValueMap<String, String> objectMaping = new LinkedMultiValueMap<>();
         objectMaping.add("grant_type", "authorization_code");
         objectMaping.add("client_id", clientId);
@@ -70,7 +78,7 @@ public class KaKaoLoginService {
         objectMaping.add("code", code);
         objectMaping.add("client_secret", clientSecret);
 
-        //카카오 서버로 post 토큰요청
+        // 카카오 서버로 post 토큰요청
         ResponseEntity<KakaoOAuthToken> response = restClient.post()
                 .body(objectMaping)
                 .contentType(APPLICATION_FORM_URLENCODED)
@@ -80,21 +88,26 @@ public class KaKaoLoginService {
         if (response.getBody() == null) {
             throw new OAuth2AuthenticationException("Invalid authorization code");
         }
-        //토큰 발췌
+        // 토큰 발췌
         String accessToken = response.getBody().access_token();
         String refreshToken = response.getBody().refresh_token();
 
         return accessToken;
-
     }
+
 
     /**
      * 토큰으로 사용자 정보 요청 후 인증, access token 및 refresh token 발행
      */
     public JwtDto getJwtDto(String accessToken) throws IOException {
+        // 프록시 설정
+        HttpHost proxy = new HttpHost("krmp-proxy.9rum.cc", "http", 3128);
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        HttpClient httpClient = HttpClients.custom().setProxy(proxy).build();
+        requestFactory.setHttpClient(httpClient);
         // kakao 서버에 access token으로 사용자 정보 요청
         RestClient restClient = RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory())
+                .requestFactory(requestFactory)
                 .messageConverters(convert -> convert.add(new AllEncompassingFormHttpMessageConverter()))
                 .baseUrl("https://kapi.kakao.com/v2/user/me")
                 .build();
@@ -126,24 +139,25 @@ public class KaKaoLoginService {
      * 개인정보 저장 및 친구목록 업데이트
      */
     private CustomUserDetails processLoginAndRelationships(KakaoOAuth2User kakaoOAuth2User, String accessToken) {
-        String provider = "kakao";
-        String providerId = kakaoOAuth2User.getId();
         String username = kakaoOAuth2User.getName();
-        String password = passwordEncoder.encode(provider + "_" + providerId);
+        String password = passwordEncoder.encode("string");
         String email = kakaoOAuth2User.getEmail();
         String profileImgUrl = kakaoOAuth2User.getImageUrl();
-        String uuid = kakaoOAuth2User.getAttribute("id").toString();
+        String kakao_id = "kakao_" + kakaoOAuth2User.getAttribute("id").toString();
 
         Member findMember = memberRepository.findByEmail(email).orElse(null);
         String friendsList = getFriendsListByKakao(accessToken);
 
         CustomUserDetails customUserDetails;
         if (findMember == null) {
-            Member createMember = Member.createMember(username, email, password, profileImgUrl, uuid);
+            Member createMember = Member.createMember(username, email, password, profileImgUrl, kakao_id);
             customUserDetails = new CustomUserDetails(kakaoOAuth2User.getAttributes(), createMember);
             memberRepository.save(createMember);
             processFirstRelationships(friendsList, createMember);
         } else {
+            if (findMember.getProfileImgUrl() != profileImgUrl) {
+                findMember.changeProfileImgUrl(profileImgUrl);
+            }
             customUserDetails = new CustomUserDetails(kakaoOAuth2User.getAttributes(), findMember);
             processRelationships(friendsList, findMember);
         }
@@ -220,8 +234,14 @@ public class KaKaoLoginService {
      * 카카오로부터 친구목록 가져오기
      */
     private static String getFriendsListByKakao(String accessToken) {
+        // 프록시 설정
+        HttpHost proxy = new HttpHost("krmp-proxy.9rum.cc", "http", 3128);
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        HttpClient httpClient = HttpClients.custom().setProxy(proxy).build();
+        requestFactory.setHttpClient(httpClient);
+
         RestClient restClient = RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory())
+                .requestFactory(requestFactory)
                 .messageConverters(converter -> converter.add(new AllEncompassingFormHttpMessageConverter()))
                 .baseUrl("https://kapi.kakao.com/v1/api/talk/friends")
                 .build();
